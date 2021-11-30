@@ -28,11 +28,16 @@ package org.alfresco.rest.api.nodes;
 
 import org.alfresco.rest.api.ContentStorageInformation;
 import org.alfresco.rest.api.model.ContentStorageInfo;
+import org.alfresco.rest.api.model.RestoreArchivedContentRequest;
+import org.alfresco.rest.framework.Operation;
 import org.alfresco.rest.framework.WebApiDescription;
+import org.alfresco.rest.framework.WebApiParam;
+import org.alfresco.rest.framework.core.ResourceParameter;
 import org.alfresco.rest.framework.core.exceptions.RelationshipResourceNotFoundException;
 import org.alfresco.rest.framework.resource.RelationshipResource;
 import org.alfresco.rest.framework.resource.actions.interfaces.RelationshipResourceAction;
 import org.alfresco.rest.framework.resource.parameters.Parameters;
+import org.alfresco.rest.framework.webscripts.WithResponse;
 import org.alfresco.service.Experimental;
 import org.alfresco.util.PropertyCheck;
 import org.springframework.beans.factory.InitializingBean;
@@ -71,5 +76,43 @@ public class NodeStorageInfoRelation implements RelationshipResourceAction.ReadB
     public void afterPropertiesSet() throws Exception
     {
         PropertyCheck.mandatory(this, "storageInformation", storageInformation);
+    }
+
+    @Experimental
+    @Operation("archive")
+    @WebApiDescription(title = "Request send content to archive",
+            description = "Submits a request to send content to archive",
+            successStatus = HttpServletResponse.SC_ACCEPTED)
+    public void requestArchiveContent(String entityResourceId, String id, Void voidRequest, Parameters parameters,
+                                      WithResponse withResponse)
+    {
+
+        final boolean result = storageInformation.requestArchiveContent(entityResourceId, id);
+        //TODO: handle below status codes and possible exceptions when downstream implementations are present
+        if (result) {
+            withResponse.setStatus(HttpServletResponse.SC_ACCEPTED);
+        } else {
+            withResponse.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
+        }
+    }
+
+    @Experimental
+    @Operation("archive-restore")
+    @WebApiParam(name = "restoreArchivedContentRequest", title = "Request for restore content from archive",
+            description = "Parameters for restore content from archive", kind = ResourceParameter.KIND.HTTP_BODY_OBJECT)
+    @WebApiDescription(title = "Request restore content from archive",
+            description = "Submits a request to restore content from archive",
+            successStatus = HttpServletResponse.SC_ACCEPTED)
+    public void requestRestoreContentFromArchive(String entityResourceId, String id,
+                                                 RestoreArchivedContentRequest restoreArchivedContentRequest,
+                                                 Parameters parameters, WithResponse withResponse)
+    {
+        final boolean result = storageInformation.requestRestoreContentFromArchive(entityResourceId, id, restoreArchivedContentRequest);
+        //TODO: handle below status codes and possible exceptions when downstream implementations are present
+        if (result) {
+            withResponse.setStatus(HttpServletResponse.SC_ACCEPTED);
+        } else {
+            withResponse.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
+        }
     }
 }
