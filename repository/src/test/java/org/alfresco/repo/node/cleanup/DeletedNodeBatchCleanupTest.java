@@ -159,6 +159,8 @@ import java.util.Map;
             logger.debug(report);
         }
 
+        Thread.sleep(1000);
+
         nodesCache.clear();
 
         assertNull("Node 4 was not cleaned up", nodeDAO.getNodeRefStatus(nodeRef4));
@@ -230,6 +232,7 @@ import java.util.Map;
             logger.debug(report);
         }
 
+        Thread.sleep(1000);
         // Get transactions committed after the test started
         RetryingTransactionHelper.RetryingTransactionCallback<List<Transaction>> getTxnsCallback = () -> ((NodeDAOImpl) nodeDAO).selectTxns(
                     Long.valueOf(start), Long.valueOf(Long.MAX_VALUE), Integer.MAX_VALUE, null, null, true);
@@ -286,7 +289,9 @@ import java.util.Map;
         assertEquals(0, txnsUnused.size());
 
         // Double-check that n4 and n5 were removed as well
+        Thread.sleep(1000);
         nodesCache.clear();
+
         assertNull("Node 4 was not cleaned up", nodeDAO.getNodeRefStatus(nodeRef4));
         assertNull("Node 5 was not cleaned up", nodeDAO.getNodeRefStatus(nodeRef5));
     }
