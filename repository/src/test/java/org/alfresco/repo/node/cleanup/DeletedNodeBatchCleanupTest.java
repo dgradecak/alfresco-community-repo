@@ -47,6 +47,7 @@ import org.alfresco.service.transaction.TransactionService;
 import org.alfresco.test_category.OwnJVMTestsCategory;
 import org.alfresco.util.BaseSpringTest;
 import org.alfresco.util.testing.category.DBTests;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -58,6 +59,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Category({ OwnJVMTestsCategory.class, DBTests.class }) public class DeletedNodeBatchCleanupTest extends BaseSpringTest
 {
@@ -159,9 +161,11 @@ import java.util.Map;
             logger.debug(report);
         }
 
-        Thread.sleep(1000);
+        Awaitility.await().timeout(15, TimeUnit.SECONDS);
 
         nodesCache.clear();
+
+        Awaitility.await().timeout(15, TimeUnit.SECONDS);
 
         assertNull("Node 4 was not cleaned up", nodeDAO.getNodeRefStatus(nodeRef4));
 
@@ -198,9 +202,11 @@ import java.util.Map;
     @Test public void testPurgeUnusedTransactions() throws Exception
     {
         // Execute transactions that update a number of nodes. For nodeRef1, all but the last txn will be unused.
+        Awaitility.await().timeout(15, TimeUnit.SECONDS);
 
         // run the transaction cleaner to clean up any existing unused transactions
         worker.doClean();
+        Awaitility.await().timeout(15, TimeUnit.SECONDS);
 
         final long start = System.currentTimeMillis();
         final Long minTxnId = nodeDAO.getMinTxnId();
@@ -211,7 +217,10 @@ import java.util.Map;
         final List<String> txnIds3 = txnIds.get(nodeRef3);
 
         // Double-check that n4 and n5 are present in deleted form
+        Awaitility.await().timeout(15, TimeUnit.SECONDS);
         nodesCache.clear();
+        Awaitility.await().timeout(15, TimeUnit.SECONDS);
+
         UserTransaction txn = transactionService.getUserTransaction(true);
         txn.begin();
         try
@@ -225,14 +234,13 @@ import java.util.Map;
         }
 
         // run the transaction cleaner
-
+        Awaitility.await().timeout(15, TimeUnit.SECONDS);
         List<String> reports = worker.doClean();
         for (String report : reports)
         {
             logger.debug(report);
         }
 
-        Thread.sleep(1000);
         // Get transactions committed after the test started
         RetryingTransactionHelper.RetryingTransactionCallback<List<Transaction>> getTxnsCallback = () -> ((NodeDAOImpl) nodeDAO).selectTxns(
                     Long.valueOf(start), Long.valueOf(Long.MAX_VALUE), Integer.MAX_VALUE, null, null, true);
@@ -289,7 +297,6 @@ import java.util.Map;
         assertEquals(0, txnsUnused.size());
 
         // Double-check that n4 and n5 were removed as well
-        Thread.sleep(1000);
         nodesCache.clear();
 
         assertNull("Node 4 was not cleaned up", nodeDAO.getNodeRefStatus(nodeRef4));
