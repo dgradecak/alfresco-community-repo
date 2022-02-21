@@ -31,6 +31,7 @@ import org.alfresco.repo.cache.SimpleCache;
 import org.alfresco.repo.domain.node.NodeDAO;
 import org.alfresco.repo.domain.node.Transaction;
 import org.alfresco.repo.domain.node.ibatis.NodeDAOImpl;
+import org.alfresco.repo.node.db.DeletedNodeBatchCleanup;
 import org.alfresco.repo.node.db.DeletedNodeCleanupWorker;
 import org.alfresco.repo.transaction.AlfrescoTransactionSupport;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
@@ -47,7 +48,6 @@ import org.alfresco.service.transaction.TransactionService;
 import org.alfresco.test_category.OwnJVMTestsCategory;
 import org.alfresco.util.BaseSpringTest;
 import org.alfresco.util.testing.category.DBTests;
-import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -59,7 +59,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @Category({ OwnJVMTestsCategory.class, DBTests.class }) public class DeletedNodeBatchCleanupTest extends BaseSpringTest
 {
@@ -77,6 +76,7 @@ import java.util.concurrent.TimeUnit;
     private NodeDAO nodeDAO;
     private SimpleCache<Serializable, Serializable> nodesCache;
     private DeletedNodeCleanupWorker worker;
+    private DeletedNodeBatchCleanup deletedNodeBatchCleanup;
 
     @Before public void before()
     {
@@ -90,10 +90,12 @@ import java.util.concurrent.TimeUnit;
         this.nodeDAO = (NodeDAO) applicationContext.getBean("nodeDAO");
         this.nodesCache = (SimpleCache<Serializable, Serializable>) applicationContext.getBean("node.nodesSharedCache");
         this.worker = (DeletedNodeCleanupWorker) applicationContext.getBean("nodeCleanup.deletedNodeCleanup");
+        this.deletedNodeBatchCleanup = (DeletedNodeBatchCleanup) applicationContext.getBean("nodeCleanup.deletedNodeBatchCleanup");
 
         this.worker.setMinPurgeAgeDays(0);
         this.worker.setAlgorithm("V2");
         this.worker.setDeleteBatchSize(20);
+        this.worker.setDeletedNodeBatchCleanup(deletedNodeBatchCleanup);
 
         this.helper = transactionService.getRetryingTransactionHelper();
         authenticationService.authenticate("admin", "admin".toCharArray());
@@ -161,11 +163,7 @@ import java.util.concurrent.TimeUnit;
             logger.debug(report);
         }
 
-        Awaitility.await().timeout(15, TimeUnit.SECONDS);
-
         nodesCache.clear();
-
-        Awaitility.await().timeout(15, TimeUnit.SECONDS);
 
         assertNull("Node 4 was not cleaned up", nodeDAO.getNodeRefStatus(nodeRef4));
 
@@ -202,11 +200,9 @@ import java.util.concurrent.TimeUnit;
     @Test public void testPurgeUnusedTransactions() throws Exception
     {
         // Execute transactions that update a number of nodes. For nodeRef1, all but the last txn will be unused.
-        Awaitility.await().timeout(15, TimeUnit.SECONDS);
 
         // run the transaction cleaner to clean up any existing unused transactions
         worker.doClean();
-        Awaitility.await().timeout(15, TimeUnit.SECONDS);
 
         final long start = System.currentTimeMillis();
         final Long minTxnId = nodeDAO.getMinTxnId();
@@ -217,10 +213,7 @@ import java.util.concurrent.TimeUnit;
         final List<String> txnIds3 = txnIds.get(nodeRef3);
 
         // Double-check that n4 and n5 are present in deleted form
-        Awaitility.await().timeout(15, TimeUnit.SECONDS);
         nodesCache.clear();
-        Awaitility.await().timeout(15, TimeUnit.SECONDS);
-
         UserTransaction txn = transactionService.getUserTransaction(true);
         txn.begin();
         try
@@ -234,7 +227,7 @@ import java.util.concurrent.TimeUnit;
         }
 
         // run the transaction cleaner
-        Awaitility.await().timeout(15, TimeUnit.SECONDS);
+
         List<String> reports = worker.doClean();
         for (String report : reports)
         {
@@ -298,7 +291,6 @@ import java.util.concurrent.TimeUnit;
 
         // Double-check that n4 and n5 were removed as well
         nodesCache.clear();
-
         assertNull("Node 4 was not cleaned up", nodeDAO.getNodeRefStatus(nodeRef4));
         assertNull("Node 5 was not cleaned up", nodeDAO.getNodeRefStatus(nodeRef5));
     }
