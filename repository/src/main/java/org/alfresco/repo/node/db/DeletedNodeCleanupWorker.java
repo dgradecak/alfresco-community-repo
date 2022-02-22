@@ -27,9 +27,7 @@ package org.alfresco.repo.node.db;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.alfresco.repo.domain.node.NodeDAO;
 import org.alfresco.repo.node.cleanup.AbstractNodeCleanupWorker;
