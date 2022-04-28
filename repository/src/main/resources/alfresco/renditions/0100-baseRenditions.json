@@ -80,6 +80,17 @@
     {
       "renditionName": "pdf",
       "targetMediaType": "application/pdf"
+    },
+    {
+      "renditionName": "yolodetection",
+      "targetMediaType": "application/yolo-json"
+    },
+    {
+      "renditionName": "yoloprediction",
+      "targetMediaType": "image/jpeg",
+      "options": [
+        {"name": "yolo", "value": true}
+      ]
     }
   ]
 }

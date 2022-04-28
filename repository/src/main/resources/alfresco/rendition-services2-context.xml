@@ -48,8 +48,18 @@
         </property>
     </bean>
 
+    <bean id="yolodetection" class="org.alfresco.repo.rendition.yolo.YoloJsonRenditionHandler">
+        <constructor-arg ref="TaggingService" />
+    </bean>
+
+    <bean id="detectObjectsAction" class="org.alfresco.repo.rendition.yolo.DetectObjectsAction" parent="action-executer">
+        <constructor-arg ref="renditionService2" />
+        <property name="publicAction" value="true" />
+    </bean>
+
+
     <!-- Rendition Service 2 base bean -->
-    <bean id="renditionService2" class="org.alfresco.repo.rendition2.RenditionService2Impl">
+    <bean id="renditionService2" class="org.alfresco.repo.rendition2.RenditionService2Impl" autowire="byType">
         <property name="transactionService" ref="TransactionService" />
         <property name="nodeService" ref="NodeService" />
         <property name="contentService" ref="ContentService" />

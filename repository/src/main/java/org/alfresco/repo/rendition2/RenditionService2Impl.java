@@ -54,6 +54,7 @@ import org.alfresco.util.PropertyCheck;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.InputStream;
 import java.io.Serializable;
@@ -84,6 +85,8 @@ public class RenditionService2Impl implements RenditionService2, InitializingBea
 
     public static final int SOURCE_HAS_NO_CONTENT = -1;
     public static final int RENDITION2_DOES_NOT_EXIST = -2;
+
+    private Map<String, RenditionHandler> renditionHandlers;
 
     private static Log logger = LogFactory.getLog(RenditionService2Impl.class);
 
@@ -149,6 +152,12 @@ public class RenditionService2Impl implements RenditionService2, InitializingBea
         return renditionDefinitionRegistry2;
     }
 
+    @Autowired
+    public void setRenditionHandlers(Map<String, RenditionHandler> renditionHandlers)
+    {
+        this.renditionHandlers = renditionHandlers;
+    }
+
     public void setTransformClient(TransformClient transformClient)
     {
         this.transformClient = transformClient;
@@ -212,6 +221,7 @@ public class RenditionService2Impl implements RenditionService2, InitializingBea
         PropertyCheck.mandatory(this, "behaviourFilter", behaviourFilter);
         PropertyCheck.mandatory(this, "ruleService", ruleService);
         PropertyCheck.mandatory(this, "asynchronousExtractor", asynchronousExtractor);
+        PropertyCheck.mandatory(this, "renditionHandlers", renditionHandlers);
     }
 
     @Override
@@ -491,7 +501,16 @@ public class RenditionService2Impl implements RenditionService2, InitializingBea
     private void consumeRendition(NodeRef sourceNodeRef, int sourceContentHashCode, InputStream transformInputStream,
                                   RenditionDefinition2 renditionDefinition, int transformContentHashCode)
     {
-        String renditionName = renditionDefinition.getRenditionName();
+        final String renditionName = renditionDefinition.getRenditionName();
+
+        RenditionHandler customHandler = renditionHandlers.get(renditionName);
+        if (customHandler != null)
+        {
+            customHandler.handle(sourceNodeRef, transformInputStream);
+            return;
+        }
+
+
         if (transformContentHashCode != sourceContentHashCode)
         {
             if (logger.isDebugEnabled())
