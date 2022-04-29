@@ -46,6 +46,7 @@ public class DetectObjectsAction extends ActionExecuterAbstractBase
     protected void executeImpl(Action action, NodeRef actionedUponNodeRef)
     {
         renditionService2.render(actionedUponNodeRef, "yolodetection");
+        renditionService2.render(actionedUponNodeRef, "yoloprediction");
     }
 
     @Override
